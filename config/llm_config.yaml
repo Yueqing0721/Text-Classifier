@@ -1,0 +1,213 @@
+# LLM API配置
+llm:
+  # API提供商配置
+  provider: "openai"  # 可选: openai, anthropic, azure
+  
+  # 模型选择
+  model: "gpt-4o-mini"
+  
+  # API认证
+  api_key: ${OPENAI_API_KEY}  # 从环境变量读取
+  organization: null
+  
+  # API请求配置
+  api:
+    base_url: "https://api.openai.com/v1"
+    timeout: 30  # 秒
+    max_retries: 3
+    retry_delay: 1  # 秒，指数退避
+    
+  # 请求参数
+  parameters:
+    temperature: 0.0  # 确保结果一致性
+    max_tokens: 2048
+    top_p: 1.0
+    frequency_penalty: 0
+    presence_penalty: 0
+    
+  # 速率限制
+  rate_limiting:
+    requests_per_minute: 100
+    tokens_per_minute: 40000
+    concurrent_requests: 5
+    
+# 预处理任务配置
+preprocessing_tasks:
+  # 文本清洗任务
+  text_cleaning:
+    enabled: true
+    system_prompt: |
+      你是一个专业的文本清洗助手。请清理以下新闻文本，去除无关信息、广告内容和格式错误，
+      保留核心新闻内容。返回清洗后的文本。
+    
+    user_prompt_template: |
+      请清洗以下新闻文本：
+      
+      标题：{title}
+      正文：{content}
+      
+      请返回清洗后的标题和正文，格式为：
+      标题：[清洗后标题]
+      正文：[清洗后正文]
+    
+  # 质量评估任务
+  quality_assessment:
+    enabled: true
+    system_prompt: |
+      你是一个新闻质量评估专家。请从以下几个维度评估新闻文章质量：
+      1. 内容完整性 (0-100分)
+      2. 语言流畅性 (0-100分) 
+      3. 信息密度 (0-100分)
+      4. 主题相关性 (0-100分)
+      
+      请返回JSON格式的评分结果。
+    
+    user_prompt_template: |
+      请评估以下新闻文章的质量：
+      
+      标题：{title}
+      正文：{content}
+      
+      请返回JSON格式：
+      {{
+        "completeness": 85,
+        "fluency": 90,
+        "density": 80,
+        "relevance": 88,
+        "overall_score": 86
+      }}
+    
+    quality_threshold: 70  # 质量阈值
+    
+  # 自动标注任务
+  auto_labeling:
+    enabled: true
+    system_prompt: |
+      你是一个新闻分类专家。请将新闻文章分类到以下三个类别之一：
+      1. 政治/政府 - 政府政策、选举活动、国际关系、法律法规
+      2. 商业/经济 - 企业动态、市场分析、金融新闻、经济政策
+      3. 科技/科学 - 科技创新、科学研究、数字化转型、技术应用
+      
+      请返回分类结果和置信度分数。
+    
+    user_prompt_template: |
+      请分类以下新闻文章：
+      
+      标题：{title}
+      正文：{content}
+      
+      请返回JSON格式：
+      {{
+        "category": "政治/政府",
+        "confidence": 0.85,
+        "reasoning": "文章主要讨论政府新政策的影响"
+      }}
+    
+    confidence_threshold: 0.8  # 置信度阈值
+    categories:
+      - "政治/政府"
+      - "商业/经济" 
+      - "科技/科学"
+
+# 批处理配置
+batch_processing:
+  # 批次大小
+  batch_size: 20
+  
+  # 并发控制
+  concurrent_batches: 3
+  
+  # 进度跟踪
+  progress_tracking:
+    enabled: true
+    log_frequency: 10  # 每处理n个批次记录进度
+    
+  # 错误处理
+  error_handling:
+    max_failures_per_batch: 3
+    continue_on_error: true
+    save_failed_samples: true
+    failed_samples_file: "failed_samples.json"
+
+# 缓存配置
+caching:
+  enabled: true
+  cache_dir: "cache/llm_results/"
+  
+  # 缓存策略
+  strategy: "content_hash"  # 基于内容哈希缓存
+  expiry_days: 30
+  
+  # 缓存压缩
+  compression: true
+  compression_level: 6
+
+# 成本控制
+cost_control:
+  # 预算控制
+  max_daily_cost: 10.0  # 美元
+  max_monthly_cost: 200.0  # 美元
+  
+  # 成本跟踪
+  track_costs: true
+  cost_log_file: "logs/api_costs.json"
+  
+  # 成本预警
+  cost_alerts:
+    daily_threshold: 8.0
+    monthly_threshold: 150.0
+    
+# 数据隐私配置
+privacy:
+  # 数据匿名化
+  anonymize_data: false
+  
+  # 敏感信息检测
+  detect_sensitive_info: true
+  sensitive_patterns:
+    - "email"
+    - "phone"
+    - "id_number"
+    
+  # 数据保留
+  data_retention_days: 90
+  auto_cleanup: true
+
+# 实验配置
+experiments:
+  # A/B测试
+  ab_testing:
+    enabled: false
+    test_ratio: 0.1
+    
+  # 提示词实验
+  prompt_experiments:
+    enabled: false
+    variants: []
+    
+# 监控和告警
+monitoring:
+  # 性能监控
+  performance_tracking: true
+  
+  # 质量监控
+  quality_monitoring:
+    enabled: true
+    sample_rate: 0.1  # 监控10%的结果
+    
+  # 告警配置
+  alerts:
+    high_error_rate_threshold: 0.1
+    slow_response_threshold: 10.0  # 秒
+    
+# 日志配置
+logging:
+  level: "INFO"
+  file: "logs/llm_processing.log"
+  rotation: "daily"
+  retention_days: 30
+  
+  # 详细日志
+  detailed_logging:
+    requests: false  # 记录所有请求详情
+    responses: false  # 记录所有响应详情
